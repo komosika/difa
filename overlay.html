@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Overlay Tool</title>
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f0f0;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 25px;
+            color: #2c3e50;
+            text-align: center;
+        }
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+        label {
+            font-size: 1rem;
+            margin-bottom: 10px;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        input[type="file"] {
+            padding: 10px;
+            font-size: 1rem;
+            cursor: pointer;
+            border: 2px solid #bdc3c7;
+            border-radius: 5px;
+            background-color: #ecf0f1;
+            transition: border-color 0.3s ease;
+        }
+        input[type="file"]:hover {
+            border-color: #3498db;
+        }
+        button {
+            margin: 10px;
+            padding: 12px 24px;
+            font-size: 1rem;
+            color: #fff;
+            background-color: #000;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+        }
+        button:hover {
+            background-color: #777;
+            transform: translateY(-2px);
+        }
+        #canvasContainer {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .image-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 15px;
+            border: 1px solid #bdc3c7;
+            border-radius: 10px;
+            background-color: #fff;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transition: box-shadow 0.3s ease;
+        }
+        .image-container:hover {
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+        }
+        .image-preview {
+            max-width: 200px;
+            margin-top: 15px;
+            border-radius: 8px;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+        }
+        #checkboxContainer {
+            margin-bottom: 30px;
+        }
+		.triangle-up, .triangle-down, .triangle-left, .triangle-right {
+			width: 0;
+			height: 0;
+			border-style: solid;
+			position: absolute;
+			cursor: pointer;
+		}
+
+		.triangle-up {
+			border-width: 0 5px 5px 5px;  /* Smaller triangle */
+			border-color: transparent transparent #333 transparent;
+			top: 13px;  /* Increase distance from the top of the image */
+			left: 50%;
+			transform: translateX(-50%);
+		}
+
+		.triangle-down {
+			border-width: 5px 5px 0 5px;  /* Smaller triangle */
+			border-color: #333 transparent transparent transparent;
+			bottom: 10px;  /* Increase distance from the bottom of the image */
+			left: 50%;
+			transform: translateX(-50%);
+		}
+
+		.triangle-left {
+			border-width: 5px 5px 5px 0;  /* Smaller triangle */
+			border-color: transparent #333 transparent transparent;
+			left: 4px;  /* Increase distance from the left of the image */
+			top: 50%;
+			transform: translateY(-50%);
+		}
+
+		.triangle-right {
+			border-width: 5px 0 5px 5px;  /* Smaller triangle */
+			border-color: transparent transparent transparent #333;
+			right: 4px;  /* Increase distance from the right of the image */
+			top: 50%;
+			transform: translateY(-50%);
+		}
+
+
+    </style>
+</head>
+<body>
+    <h1>Image Overlay Tool</h1>
+
+    <div class="input-group">
+    <label for="backgroundImage">Background Image Input</label>
+    <input type="file" id="backgroundImage" accept="image/*" multiple />
+	</div>
+
+	<div class="input-group">
+    <label for="overlayImage">Overlay Image Input</label>
+    <input type="file" id="overlayImage" accept="image/*" />
+	</div>
+
+	<div id="canvasContainer"></div>
+
+	<div id="checkboxContainer"></div>
+
+	<p id="selectedCount">Selected: 0</p>
+
+	<div>
+    <button id="selectAll">Select All</button>
+    <button id="deselectAll">Deselect All</button>
+    <button id="saveSelectedImages">Save Selected Images</button>
+	</div>
+
+
+    <script>
+document.getElementById('backgroundImage').addEventListener('change', handleBackgroundFilesSelect);
+document.getElementById('overlayImage').addEventListener('change', handleFileSelect);
+document.getElementById('saveSelectedImages').addEventListener('click', saveSelectedImages);
+document.getElementById('selectAll').addEventListener('click', selectAllCheckboxes);
+document.getElementById('deselectAll').addEventListener('click', deselectAllCheckboxes);
+
+let backgroundImages = [];
+let overlayImage = null;
+let overlayImageData = null;
+let cropPositions = [];
+
+function updateSelectedCount() {
+    const checkboxes = document.querySelectorAll('#canvasContainer input[type="checkbox"]');
+    const selectedCount = Array.from(checkboxes).filter(checkbox => checkbox.checked).length;
+    document.getElementById('selectedCount').innerText = `Selected: ${selectedCount}`;
+}
+
+function handleBackgroundFilesSelect(event) {
+    backgroundImages = [];
+    const files = event.target.files;
+
+    Array.from(files).forEach((file, index) => {
+        const reader = new FileReader();
+
+        reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+                backgroundImages.push(img);
+                cropPositions.push({ x: 0, y: 0 }); // Initialize crop position for each image
+                if (overlayImageData) {
+                    drawImageWithOverlay(img, index);
+                }
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+function handleFileSelect(event) {
+    const file = event.target.files[0];
+    const reader = new FileReader();
+
+    reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+            overlayImage = img;
+            overlayImageData = {
+                src: img.src,
+                width: img.width,
+                height: img.height
+            };
+
+            if (backgroundImages.length > 0) {
+                backgroundImages.forEach((backgroundImage, index) => {
+                    drawImageWithOverlay(backgroundImage, index);
+                });
+            }
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+function drawImageWithOverlay(backgroundImage, index) {
+    const canvasContainer = document.getElementById('canvasContainer');
+    let imageContainer = document.querySelector(`#imgContainer${index}`);
+    let canvas;
+
+    // Create image container if it doesn't exist
+    if (!imageContainer) {
+        imageContainer = document.createElement('div');
+        imageContainer.id = `imgContainer${index}`;
+        imageContainer.classList.add('image-container');
+        imageContainer.style.position = 'relative'; // Add relative positioning for triangle buttons
+
+        canvas = document.createElement('canvas');
+        canvas.classList.add('image-preview');
+        imageContainer.appendChild(canvas);
+
+        const checkbox = document.createElement('input');
+        const label = document.createElement('label');
+
+        checkbox.type = 'checkbox';
+        checkbox.id = `img${index}`;
+        label.htmlFor = checkbox.id;
+        label.innerText = `Image ${index + 1}`;
+
+        checkbox.addEventListener('change', updateSelectedCount);
+
+        imageContainer.appendChild(document.createElement('br'));
+        imageContainer.appendChild(checkbox);
+        imageContainer.appendChild(label);
+
+        // Create crop adjustment controls (triangles)
+        const triangleUp = document.createElement('div');
+        triangleUp.classList.add('triangle-up');
+        triangleUp.onclick = () => adjustCrop(index, 'down');
+
+        const triangleDown = document.createElement('div');
+        triangleDown.classList.add('triangle-down');
+        triangleDown.onclick = () => adjustCrop(index, 'up');
+
+        const triangleLeft = document.createElement('div');
+        triangleLeft.classList.add('triangle-left');
+        triangleLeft.onclick = () => adjustCrop(index, 'right');
+
+        const triangleRight = document.createElement('div');
+        triangleRight.classList.add('triangle-right');
+        triangleRight.onclick = () => adjustCrop(index, 'left');
+
+        imageContainer.appendChild(triangleUp);
+        imageContainer.appendChild(triangleDown);
+        imageContainer.appendChild(triangleLeft);
+        imageContainer.appendChild(triangleRight);
+
+        canvasContainer.appendChild(imageContainer);
+    } else {
+        canvas = imageContainer.querySelector('canvas');
+    }
+
+    const ctx = canvas.getContext('2d');
+    const shortSide = Math.min(backgroundImage.width, backgroundImage.height);
+    let offsetX = cropPositions[index].x;
+    let offsetY = cropPositions[index].y;
+    const previewSize = 800;
+    canvas.width = previewSize;
+    canvas.height = previewSize;
+
+    ctx.clearRect(0, 0, previewSize, previewSize); // Clear canvas before drawing
+
+    ctx.drawImage(
+        backgroundImage,
+        offsetX,
+        offsetY,
+        shortSide,
+        shortSide,
+        0,
+        0,
+        previewSize,
+        previewSize
+    );
+
+    const overlay = new Image();
+    overlay.onload = function() {
+        ctx.drawImage(overlay, 0, 0, previewSize, previewSize);
+    };
+    overlay.src = overlayImageData.src;
+
+    canvas.addEventListener('click', () => {
+        const checkbox = document.querySelector(`#img${index}`);
+        checkbox.checked = !checkbox.checked;
+        updateSelectedCount();
+    });
+}
+
+function adjustCrop(index, direction) {
+    const step = 50;  // Adjust step size as needed
+    if (direction === 'up') cropPositions[index].y -= step;
+    if (direction === 'down') cropPositions[index].y += step;
+    if (direction === 'left') cropPositions[index].x -= step;
+    if (direction === 'right') cropPositions[index].x += step;
+
+    // Redraw the image with the new crop position
+    drawImageWithOverlay(backgroundImages[index], index);
+}
+
+function saveSelectedImages() {
+    const canvasContainer = document.getElementById('canvasContainer');
+    const imageContainers = canvasContainer.getElementsByClassName('image-container');
+    const checkboxes = canvasContainer.querySelectorAll('input[type="checkbox"]');
+
+    let index = 0;
+
+    function triggerDownload() {
+        if (index < checkboxes.length) {
+            if (checkboxes[index].checked) {
+                const canvas = imageContainers[index].getElementsByTagName('canvas')[0];
+                const link = document.createElement('a');
+                link.download = `content-${1 + index}.jpg`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            }
+            index++;
+            setTimeout(triggerDownload, 100);
+        }
+    }
+
+    triggerDownload();
+}
+
+function selectAllCheckboxes() {
+    const checkboxes = document.querySelectorAll('#canvasContainer input[type="checkbox"]');
+    checkboxes.forEach(checkbox => checkbox.checked = true);
+    updateSelectedCount();
+}
+
+function deselectAllCheckboxes() {
+    const checkboxes = document.querySelectorAll('#canvasContainer input[type="checkbox"]');
+    checkboxes.forEach(checkbox => checkbox.checked = false);
+    updateSelectedCount();
+}
+
+    </script>
+</body>
+</html>
