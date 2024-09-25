@@ -299,12 +299,12 @@ function drawImageWithOverlay(backgroundImage, index) {
         // Create zoom controls
         const zoomInBtn = document.createElement('button');
         zoomInBtn.classList.add('zoom-in');
-        zoomInBtn.innerText = '+';
+        zoomInBtn.innerText = 'Zoom Out';
         zoomInBtn.onclick = () => adjustZoom(index, 'in');
         
         const zoomOutBtn = document.createElement('button');
         zoomOutBtn.classList.add('zoom-out');
-        zoomOutBtn.innerText = '-';
+        zoomOutBtn.innerText = 'Zoom In';
         zoomOutBtn.onclick = () => adjustZoom(index, 'out');
 
         imageContainer.appendChild(zoomInBtn);
