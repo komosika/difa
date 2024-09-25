@@ -88,6 +88,22 @@
             border-radius: 8px;
             box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
         }
+	    .zoom-in, .zoom-out {
+   		 	position: relative;
+   			margin: 5px;
+    			padding: 5px;
+    			font-size: 1rem;
+    			border: none;
+    			background-color: #3498db;
+    			color: #fff;
+    			border-radius: 5px;
+    			cursor: pointer;
+   			transition: background-color 0.3s ease;
+}
+
+		.zoom-in:hover, .zoom-out:hover {
+    			background-color: #2980b9;
+}
         #checkboxContainer {
             margin-bottom: 30px;
         }
@@ -130,22 +146,7 @@
 			top: 50%;
 			transform: translateY(-50%);
 		}
-	    	.zoom-in, .zoom-out {
-   		 	position: relative;
-   			margin: 5px;
-    			padding: 5px;
-    			font-size: 1rem;
-    			border: none;
-    			background-color: #3498db;
-    			color: #fff;
-    			border-radius: 5px;
-    			cursor: pointer;
-   			transition: background-color 0.3s ease;
-}
-
-		.zoom-in:hover, .zoom-out:hover {
-    			background-color: #2980b9;
-}
+	    	
 
 
     </style>
