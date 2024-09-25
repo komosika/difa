@@ -130,6 +130,22 @@
 			top: 50%;
 			transform: translateY(-50%);
 		}
+	    	.zoom-in, .zoom-out {
+   		 	position: relative;
+   			margin: 5px;
+    			padding: 5px;
+    			font-size: 1rem;
+    			border: none;
+    			background-color: #3498db;
+    			color: #fff;
+    			border-radius: 5px;
+    			cursor: pointer;
+   			transition: background-color 0.3s ease;
+}
+
+		.zoom-in:hover, .zoom-out:hover {
+    			background-color: #2980b9;
+}
 
 
     </style>
@@ -150,6 +166,9 @@
 	<div id="canvasContainer"></div>
 
 	<div id="checkboxContainer"></div>
+	
+	<button class="zoom-in">+</button>
+	<button class="zoom-out">-</button>
 
 	<p id="selectedCount">Selected: 0</p>
 
@@ -166,7 +185,8 @@ document.getElementById('overlayImage').addEventListener('change', handleFileSel
 document.getElementById('saveSelectedImages').addEventListener('click', saveSelectedImages);
 document.getElementById('selectAll').addEventListener('click', selectAllCheckboxes);
 document.getElementById('deselectAll').addEventListener('click', deselectAllCheckboxes);
-
+	    
+let zoomLevels = [];
 let backgroundImages = [];
 let overlayImage = null;
 let overlayImageData = null;
@@ -277,9 +297,28 @@ function drawImageWithOverlay(backgroundImage, index) {
         imageContainer.appendChild(triangleLeft);
         imageContainer.appendChild(triangleRight);
 
+        // Create zoom controls
+        const zoomInBtn = document.createElement('button');
+        zoomInBtn.classList.add('zoom-in');
+        zoomInBtn.innerText = '+';
+        zoomInBtn.onclick = () => adjustZoom(index, 'in');
+        
+        const zoomOutBtn = document.createElement('button');
+        zoomOutBtn.classList.add('zoom-out');
+        zoomOutBtn.innerText = '-';
+        zoomOutBtn.onclick = () => adjustZoom(index, 'out');
+
+        imageContainer.appendChild(zoomInBtn);
+        imageContainer.appendChild(zoomOutBtn);
+
         canvasContainer.appendChild(imageContainer);
     } else {
         canvas = imageContainer.querySelector('canvas');
+    }
+
+    // Initialize zoom level if not set
+    if (!zoomLevels[index]) {
+        zoomLevels[index] = 1;
     }
 
     const ctx = canvas.getContext('2d');
@@ -296,8 +335,8 @@ function drawImageWithOverlay(backgroundImage, index) {
         backgroundImage,
         offsetX,
         offsetY,
-        shortSide,
-        shortSide,
+        shortSide * zoomLevels[index],  // Adjust width by zoom level
+        shortSide * zoomLevels[index],  // Adjust height by zoom level
         0,
         0,
         previewSize,
@@ -316,7 +355,6 @@ function drawImageWithOverlay(backgroundImage, index) {
         updateSelectedCount();
     });
 }
-
 function adjustCrop(index, direction) {
     const step = 50;  // Adjust step size as needed
     if (direction === 'up') cropPositions[index].y -= step;
@@ -362,6 +400,16 @@ function deselectAllCheckboxes() {
     const checkboxes = document.querySelectorAll('#canvasContainer input[type="checkbox"]');
     checkboxes.forEach(checkbox => checkbox.checked = false);
     updateSelectedCount();
+}
+function adjustZoom(index, direction) {
+    const zoomStep = 0.1;  // Define zoom step
+    if (direction === 'in') {
+        zoomLevels[index] += zoomStep;  // Increase zoom level
+    } else if (direction === 'out' && zoomLevels[index] > zoomStep) {
+        zoomLevels[index] -= zoomStep;  // Decrease zoom level
+    }
+    // Redraw the image with the updated zoom level
+    drawImageWithOverlay(backgroundImages[index], index);
 }
 
     </script>
