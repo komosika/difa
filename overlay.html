@@ -244,172 +244,162 @@ function handleFileSelect(event) {
     reader.readAsDataURL(file);
 }
 
-function drawImageWithOverlay(backgroundImage, index) {
-    const canvasContainer = document.getElementById('canvasContainer');
-    let imageContainer = document.querySelector(`#imgContainer${index}`);
-    let canvas;
+    function drawImageWithOverlay(backgroundImage, index) {
+        const canvasContainer = document.getElementById('canvasContainer');
+        let imageContainer = document.querySelector(`#imgContainer${index}`);
+        let canvas;
 
-    // Create image container if it doesn't exist
-    if (!imageContainer) {
-        imageContainer = document.createElement('div');
-        imageContainer.id = `imgContainer${index}`;
-        imageContainer.classList.add('image-container');
-        imageContainer.style.position = 'relative'; // Add relative positioning for triangle buttons
+        if (!imageContainer) {
+            imageContainer = document.createElement('div');
+            imageContainer.id = `imgContainer${index}`;
+            imageContainer.classList.add('image-container');
+            imageContainer.style.position = 'relative';
 
-        canvas = document.createElement('canvas');
-        canvas.classList.add('image-preview');
-        imageContainer.appendChild(canvas);
+            canvas = document.createElement('canvas');
+            canvas.classList.add('image-preview');
+            imageContainer.appendChild(canvas);
 
-        const checkbox = document.createElement('input');
-        const label = document.createElement('label');
+            const checkbox = document.createElement('input');
+            const label = document.createElement('label');
 
-        checkbox.type = 'checkbox';
-        checkbox.id = `img${index}`;
-        label.htmlFor = checkbox.id;
-        label.innerText = `Image ${index + 1}`;
+            checkbox.type = 'checkbox';
+            checkbox.id = `img${index}`;
+            label.htmlFor = checkbox.id;
+            label.innerText = `Image ${index + 1}`;
 
-        checkbox.addEventListener('change', updateSelectedCount);
+            checkbox.addEventListener('change', updateSelectedCount);
 
-        imageContainer.appendChild(document.createElement('br'));
-        imageContainer.appendChild(checkbox);
-        imageContainer.appendChild(label);
+            imageContainer.appendChild(document.createElement('br'));
+            imageContainer.appendChild(checkbox);
+            imageContainer.appendChild(label);
 
-        // Create crop adjustment controls (triangles)
-        const triangleUp = document.createElement('div');
-        triangleUp.classList.add('triangle-up');
-        triangleUp.onclick = () => adjustCrop(index, 'down');
+            canvasContainer.appendChild(imageContainer);
 
-        const triangleDown = document.createElement('div');
-        triangleDown.classList.add('triangle-down');
-        triangleDown.onclick = () => adjustCrop(index, 'up');
+            // Add drag event listeners for the canvas
+            canvas.addEventListener('mousedown', (e) => startDragging(e, index));
+            canvas.addEventListener('mousemove', (e) => duringDragging(e, index));
+            canvas.addEventListener('mouseup', stopDragging);
+            canvas.addEventListener('mouseleave', stopDragging);
 
-        const triangleLeft = document.createElement('div');
-        triangleLeft.classList.add('triangle-left');
-        triangleLeft.onclick = () => adjustCrop(index, 'right');
+            // Add scroll event listener for zooming
+            canvas.addEventListener('wheel', (e) => adjustZoom(index, e));
+        } else {
+            canvas = imageContainer.querySelector('canvas');
+        }
 
-        const triangleRight = document.createElement('div');
-        triangleRight.classList.add('triangle-right');
-        triangleRight.onclick = () => adjustCrop(index, 'left');
+        if (!zoomLevels[index]) {
+            zoomLevels[index] = 1;
+        }
 
-        imageContainer.appendChild(triangleUp);
-        imageContainer.appendChild(triangleDown);
-        imageContainer.appendChild(triangleLeft);
-        imageContainer.appendChild(triangleRight);
+        const ctx = canvas.getContext('2d');
+        const shortSide = Math.min(backgroundImage.width, backgroundImage.height);
+        let offsetX = cropPositions[index].x;
+        let offsetY = cropPositions[index].y;
+        const previewSize = 800;
+        canvas.width = previewSize;
+        canvas.height = previewSize;
 
-        // Create zoom controls
-        const zoomInBtn = document.createElement('button');
-        zoomInBtn.classList.add('zoom-in');
-        zoomInBtn.innerText = 'Zoom Out';
-        zoomInBtn.onclick = () => adjustZoom(index, 'in');
-        
-        const zoomOutBtn = document.createElement('button');
-        zoomOutBtn.classList.add('zoom-out');
-        zoomOutBtn.innerText = 'Zoom In';
-        zoomOutBtn.onclick = () => adjustZoom(index, 'out');
+        ctx.clearRect(0, 0, previewSize, previewSize);
 
-        imageContainer.appendChild(zoomInBtn);
-        imageContainer.appendChild(zoomOutBtn);
+        ctx.drawImage(
+            backgroundImage,
+            offsetX,
+            offsetY,
+            shortSide * zoomLevels[index],
+            shortSide * zoomLevels[index],
+            0,
+            0,
+            previewSize,
+            previewSize
+        );
 
-        canvasContainer.appendChild(imageContainer);
-    } else {
-        canvas = imageContainer.querySelector('canvas');
+        const overlay = new Image();
+        overlay.onload = function() {
+            ctx.drawImage(overlay, 0, 0, previewSize, previewSize);
+        };
+        overlay.src = overlayImageData.src;
+
+        canvas.addEventListener('click', () => {
+            const checkbox = document.querySelector(`#img${index}`);
+            checkbox.checked = !checkbox.checked;
+            updateSelectedCount();
+        });
     }
 
-    // Initialize zoom level if not set
-    if (!zoomLevels[index]) {
-        zoomLevels[index] = 1;
+    function startDragging(event, index) {
+        isDragging = true;
+        startX = event.offsetX;
+        startY = event.offsetY;
     }
 
-    const ctx = canvas.getContext('2d');
-    const shortSide = Math.min(backgroundImage.width, backgroundImage.height);
-    let offsetX = cropPositions[index].x;
-    let offsetY = cropPositions[index].y;
-    const previewSize = 800;
-    canvas.width = previewSize;
-    canvas.height = previewSize;
+    function duringDragging(event, index) {
+        if (isDragging) {
+            // Inverted movement
+            const deltaX = -(event.offsetX - startX);
+            const deltaY = -(event.offsetY - startY);
 
-    ctx.clearRect(0, 0, previewSize, previewSize); // Clear canvas before drawing
+            cropPositions[index].x += deltaX;
+            cropPositions[index].y += deltaY;
 
-    ctx.drawImage(
-        backgroundImage,
-        offsetX,
-        offsetY,
-        shortSide * zoomLevels[index],  // Adjust width by zoom level
-        shortSide * zoomLevels[index],  // Adjust height by zoom level
-        0,
-        0,
-        previewSize,
-        previewSize
-    );
+            startX = event.offsetX;
+            startY = event.offsetY;
 
-    const overlay = new Image();
-    overlay.onload = function() {
-        ctx.drawImage(overlay, 0, 0, previewSize, previewSize);
-    };
-    overlay.src = overlayImageData.src;
-
-    canvas.addEventListener('click', () => {
-        const checkbox = document.querySelector(`#img${index}`);
-        checkbox.checked = !checkbox.checked;
-        updateSelectedCount();
-    });
-}
-function adjustCrop(index, direction) {
-    const step = 50;  // Adjust step size as needed
-    if (direction === 'up') cropPositions[index].y -= step;
-    if (direction === 'down') cropPositions[index].y += step;
-    if (direction === 'left') cropPositions[index].x -= step;
-    if (direction === 'right') cropPositions[index].x += step;
-
-    // Redraw the image with the new crop position
-    drawImageWithOverlay(backgroundImages[index], index);
-}
-
-function saveSelectedImages() {
-    const canvasContainer = document.getElementById('canvasContainer');
-    const imageContainers = canvasContainer.getElementsByClassName('image-container');
-    const checkboxes = canvasContainer.querySelectorAll('input[type="checkbox"]');
-
-    let index = 0;
-
-    function triggerDownload() {
-        if (index < checkboxes.length) {
-            if (checkboxes[index].checked) {
-                const canvas = imageContainers[index].getElementsByTagName('canvas')[0];
-                const link = document.createElement('a');
-                link.download = `content-${1 + index}.jpg`;
-                link.href = canvas.toDataURL('image/png');
-                link.click();
-            }
-            index++;
-            setTimeout(triggerDownload, 100);
+            drawImageWithOverlay(backgroundImages[index], index);
         }
     }
 
-    triggerDownload();
-}
-
-function selectAllCheckboxes() {
-    const checkboxes = document.querySelectorAll('#canvasContainer input[type="checkbox"]');
-    checkboxes.forEach(checkbox => checkbox.checked = true);
-    updateSelectedCount();
-}
-
-function deselectAllCheckboxes() {
-    const checkboxes = document.querySelectorAll('#canvasContainer input[type="checkbox"]');
-    checkboxes.forEach(checkbox => checkbox.checked = false);
-    updateSelectedCount();
-}
-function adjustZoom(index, direction) {
-    const zoomStep = 0.1;  // Define zoom step
-    if (direction === 'in') {
-        zoomLevels[index] += zoomStep;  // Increase zoom level
-    } else if (direction === 'out' && zoomLevels[index] > zoomStep) {
-        zoomLevels[index] -= zoomStep;  // Decrease zoom level
+    function stopDragging() {
+        isDragging = false;
     }
-    // Redraw the image with the updated zoom level
-    drawImageWithOverlay(backgroundImages[index], index);
-}
+
+    function adjustZoom(index, event) {
+        event.preventDefault();
+        const zoomStep = 0.1;
+
+        if (event.deltaY < 0) {
+            zoomLevels[index] += zoomStep;
+        } else if (event.deltaY > 0 && zoomLevels[index] > zoomStep) {
+            zoomLevels[index] -= zoomStep;
+        }
+
+        drawImageWithOverlay(backgroundImages[index], index);
+    }
+
+    function saveSelectedImages() {
+        const canvasContainer = document.getElementById('canvasContainer');
+        const imageContainers = canvasContainer.getElementsByClassName('image-container');
+        const checkboxes = canvasContainer.querySelectorAll('input[type="checkbox"]');
+
+        let index = 0;
+
+        function triggerDownload() {
+            if (index < checkboxes.length) {
+                if (checkboxes[index].checked) {
+                    const canvas = imageContainers[index].getElementsByTagName('canvas')[0];
+                    const link = document.createElement('a');
+                    link.download = `content-${1 + index}.jpg`;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                }
+                index++;
+                setTimeout(triggerDownload, 100);
+            }
+        }
+
+        triggerDownload();
+    }
+
+    function selectAllCheckboxes() {
+        const checkboxes = document.querySelectorAll('#canvasContainer input[type="checkbox"]');
+        checkboxes.forEach(checkbox => checkbox.checked = true);
+        updateSelectedCount();
+    }
+
+    function deselectAllCheckboxes() {
+        const checkboxes = document.querySelectorAll('#canvasContainer input[type="checkbox"]');
+        checkboxes.forEach(checkbox => checkbox.checked = false);
+        updateSelectedCount();
+    }
 
     </script>
 </body>
