@@ -146,7 +146,10 @@
 			top: 50%;
 			transform: translateY(-50%);
 		}
-	    	
+		input[type="range"] {
+    	width: 100%;
+   		margin: 5px 0;
+		}
 
 
     </style>
@@ -190,6 +193,9 @@ let backgroundImages = [];
 let overlayImage = null;
 let overlayImageData = null;
 let cropPositions = [];
+let isDragging = false;
+let startX = 0;
+let startY = 0;
 
 function updateSelectedCount() {
     const checkboxes = document.querySelectorAll('#canvasContainer input[type="checkbox"]');
@@ -244,126 +250,162 @@ function handleFileSelect(event) {
     reader.readAsDataURL(file);
 }
 
-    function drawImageWithOverlay(backgroundImage, index) {
-        const canvasContainer = document.getElementById('canvasContainer');
-        let imageContainer = document.querySelector(`#imgContainer${index}`);
-        let canvas;
+function drawImageWithOverlay(backgroundImage, index) {
+    const canvasContainer = document.getElementById('canvasContainer');
+    let imageContainer = document.querySelector(`#imgContainer${index}`);
+    let canvas;
 
-        if (!imageContainer) {
-            imageContainer = document.createElement('div');
-            imageContainer.id = `imgContainer${index}`;
-            imageContainer.classList.add('image-container');
-            imageContainer.style.position = 'relative';
+    if (!imageContainer) {
+        imageContainer = document.createElement('div');
+        imageContainer.id = `imgContainer${index}`;
+        imageContainer.classList.add('image-container');
+        imageContainer.style.position = 'relative';
 
-            canvas = document.createElement('canvas');
-            canvas.classList.add('image-preview');
-            imageContainer.appendChild(canvas);
+        canvas = document.createElement('canvas');
+        canvas.classList.add('image-preview');
+        imageContainer.appendChild(canvas);
 
-            const checkbox = document.createElement('input');
-            const label = document.createElement('label');
+        const checkbox = document.createElement('input');
+        const label = document.createElement('label');
 
-            checkbox.type = 'checkbox';
-            checkbox.id = `img${index}`;
-            label.htmlFor = checkbox.id;
-            label.innerText = `Image ${index + 1}`;
+        checkbox.type = 'checkbox';
+        checkbox.id = `img${index}`;
+        label.htmlFor = checkbox.id;
+        label.innerText = `Image ${index + 1}`;
 
-            checkbox.addEventListener('change', updateSelectedCount);
+        checkbox.addEventListener('change', updateSelectedCount);
 
-            imageContainer.appendChild(document.createElement('br'));
-            imageContainer.appendChild(checkbox);
-            imageContainer.appendChild(label);
+        imageContainer.appendChild(document.createElement('br'));
+        imageContainer.appendChild(checkbox);
+        imageContainer.appendChild(label);
 
-            canvasContainer.appendChild(imageContainer);
+        // Add rotation slider
+        const rotateSlider = document.createElement('input');
+        rotateSlider.type = 'range';
+        rotateSlider.id = `rotateSlider${index}`;
+        rotateSlider.min = -180;
+        rotateSlider.max = 180;
+        rotateSlider.value = 0;
+        rotateSlider.addEventListener('input', () => drawImageWithOverlay(backgroundImages[index], index));
+        
+        imageContainer.appendChild(document.createTextNode('Rotate:'));
+        imageContainer.appendChild(rotateSlider);
 
-            // Add drag event listeners for the canvas
-            canvas.addEventListener('mousedown', (e) => startDragging(e, index));
-            canvas.addEventListener('mousemove', (e) => duringDragging(e, index));
-            canvas.addEventListener('mouseup', stopDragging);
-            canvas.addEventListener('mouseleave', stopDragging);
+        canvasContainer.appendChild(imageContainer);
 
-            // Add scroll event listener for zooming
-            canvas.addEventListener('wheel', (e) => adjustZoom(index, e));
-        } else {
-            canvas = imageContainer.querySelector('canvas');
-        }
+        // Add drag event listeners for the canvas
+        canvas.addEventListener('mousedown', (e) => startDragging(e, index));
+        canvas.addEventListener('mousemove', (e) => duringDragging(e, index));
+        canvas.addEventListener('mouseup', stopDragging);
+        canvas.addEventListener('mouseleave', stopDragging);
 
-        if (!zoomLevels[index]) {
-            zoomLevels[index] = 1;
-        }
-
-        const ctx = canvas.getContext('2d');
-        const shortSide = Math.min(backgroundImage.width, backgroundImage.height);
-        let offsetX = cropPositions[index].x;
-        let offsetY = cropPositions[index].y;
-        const previewSize = 800;
-        canvas.width = previewSize;
-        canvas.height = previewSize;
-
-        ctx.clearRect(0, 0, previewSize, previewSize);
-
-        ctx.drawImage(
-            backgroundImage,
-            offsetX,
-            offsetY,
-            shortSide * zoomLevels[index],
-            shortSide * zoomLevels[index],
-            0,
-            0,
-            previewSize,
-            previewSize
-        );
-
-        const overlay = new Image();
-        overlay.onload = function() {
-            ctx.drawImage(overlay, 0, 0, previewSize, previewSize);
-        };
-        overlay.src = overlayImageData.src;
-
-        canvas.addEventListener('click', () => {
-            const checkbox = document.querySelector(`#img${index}`);
-            checkbox.checked = !checkbox.checked;
-            updateSelectedCount();
-        });
+        // Add scroll event listener for zooming
+        canvas.addEventListener('wheel', (e) => adjustZoom(index, e));
+    } else {
+        canvas = imageContainer.querySelector('canvas');
     }
 
-    function startDragging(event, index) {
-        isDragging = true;
+    if (!zoomLevels[index]) {
+        zoomLevels[index] = 1;
+    }
+
+    const ctx = canvas.getContext('2d');
+    const previewSize = 800; // Canvas size
+    canvas.width = previewSize;
+    canvas.height = previewSize;
+
+    ctx.clearRect(0, 0, previewSize, previewSize);
+
+    // Get rotation value
+    const rotateValue = document.getElementById(`rotateSlider${index}`).value;
+
+    // Save the current state
+    ctx.save();
+
+    // Translate and rotate the context
+    ctx.translate(previewSize / 2, previewSize / 2);
+    ctx.rotate((rotateValue * Math.PI) / 180); // Rotate in radians
+    ctx.translate(-previewSize / 2, -previewSize / 2); // Translate back to the origin
+
+    // Calculate the scale based on the zoom level
+    const backgroundWidth = backgroundImage.width;
+    const backgroundHeight = backgroundImage.height;
+
+    // Calculate the scale to fill the overlay
+    const scale = Math.max(previewSize / backgroundWidth, previewSize / backgroundHeight) * zoomLevels[index];
+
+    // Calculate the drawing position considering the crop position
+    const drawX = (previewSize - backgroundWidth * scale) / 2 + cropPositions[index].x * scale;
+    const drawY = (previewSize - backgroundHeight * scale) / 2 + cropPositions[index].y * scale;
+
+    // Draw the background image considering crop position and scale
+    ctx.drawImage(backgroundImage, drawX, drawY, backgroundWidth * scale, backgroundHeight * scale);
+
+    // Draw the overlay image
+    const overlay = new Image();
+    overlay.onload = function() {
+        ctx.drawImage(overlay, 0, 0, previewSize, previewSize);
+    };
+    overlay.src = overlayImageData.src;
+
+    ctx.restore(); // Restore the saved state
+
+    canvas.addEventListener('click', () => {
+        const checkbox = document.querySelector(`#img${index}`);
+        checkbox.checked = !checkbox.checked;
+        updateSelectedCount();
+    });
+}
+
+function startDragging(event, index) {
+    isDragging = true;
+    startX = event.offsetX;
+    startY = event.offsetY;
+}
+
+function duringDragging(event, index) {
+    if (isDragging) {
+        // Hitung delta pergerakan
+        const deltaX = (event.offsetX - startX) / zoomLevels[index];
+        const deltaY = (event.offsetY - startY) / zoomLevels[index];
+
+        // Perbarui posisi crop berdasarkan dragging
+        cropPositions[index].x += deltaX;
+        cropPositions[index].y += deltaY;
+
+        // Set posisi awal untuk pergerakan berikutnya
         startX = event.offsetX;
         startY = event.offsetY;
-    }
 
-    function duringDragging(event, index) {
-        if (isDragging) {
-            // Inverted movement
-            const deltaX = -(event.offsetX - startX);
-            const deltaY = -(event.offsetY - startY);
-
-            cropPositions[index].x += deltaX;
-            cropPositions[index].y += deltaY;
-
-            startX = event.offsetX;
-            startY = event.offsetY;
-
-            drawImageWithOverlay(backgroundImages[index], index);
-        }
-    }
-
-    function stopDragging() {
-        isDragging = false;
-    }
-
-    function adjustZoom(index, event) {
-        event.preventDefault();
-        const zoomStep = 0.1;
-
-        if (event.deltaY < 0) {
-            zoomLevels[index] += zoomStep;
-        } else if (event.deltaY > 0 && zoomLevels[index] > zoomStep) {
-            zoomLevels[index] -= zoomStep;
-        }
-
+        // Gambar ulang gambar dengan posisi baru
         drawImageWithOverlay(backgroundImages[index], index);
     }
+}
+
+function stopDragging() {
+    isDragging = false;
+}
+
+    function adjustZoom(index, event) {
+    event.preventDefault();
+    const zoomStep = 0.1;
+    const canvas = document.querySelector(`#imgContainer${index} canvas`);
+
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = event.clientX - rect.left; // Get mouse position relative to the canvas
+    const mouseY = event.clientY - rect.top;
+
+    const zoomFactor = event.deltaY < 0 ? 1 + zoomStep : 1 - zoomStep;
+
+    // Calculate new zoom level
+    zoomLevels[index] = Math.max(zoomLevels[index] * zoomFactor, zoomStep);
+
+    // Adjust crop positions based on the zoom factor
+    cropPositions[index].x = mouseX - (mouseX - cropPositions[index].x) * zoomFactor;
+    cropPositions[index].y = mouseY - (mouseY - cropPositions[index].y) * zoomFactor;
+
+    drawImageWithOverlay(backgroundImages[index], index);
+}     
 
     function saveSelectedImages() {
         const canvasContainer = document.getElementById('canvasContainer');
