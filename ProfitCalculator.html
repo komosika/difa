@@ -1,6 +1,6 @@
 <!DOCTYPE html>
-<html lang="en"><head>
-<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<html lang="en">
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<!-- Title displayed in browser tab -->
@@ -117,6 +117,10 @@
 			display: none;
 		}
 		
+		#downloadExcelButton {
+		  display: none;
+		}
+		
 		.positive {
 			background-color: #0a8342; /* Green background for positive values */
 			color: white; /* White text color */
@@ -157,11 +161,12 @@
 				<th class="sortable" onclick="sortTable(6)">CPC</th>
                 <th class="sortable" onclick="sortTable(7)">CTR</th>
                 <th class="sortable" onclick="sortTable(8)">CPR FB</th>
-                <th class="sortable" onclick="sortTable(9)">CPR ADS</th>
+                <th class="sortable" onclick="sortTable(9)">CPR ADS / 2</th>
 				<th class="sortable" onclick="sortTable(10)">Link Clicks</th>
 				<th class="sortable" onclick="sortTable(11)">Page Views</th>
 				<th class="sortable" onclick="sortTable(12)">Click Different</th>
 				<th class="sortable" onclick="sortTable(13)">Delete</th>
+				<th class="sortable" onclick="sortTable(14)">Note</th>
             </tr>
         </thead>
         <tbody>
@@ -170,7 +175,7 @@
     </table>
 	
 	<!-- Tabel untuk Menampilkan Total -->
-	<h3>Total Pengeluaran dan Keuntungan</h3>
+	<h3>Total Spending & Earning</h3>
 	<table id="totalTable">
 		<thead>
 			<tr>
@@ -182,7 +187,7 @@
 				<th>CPC</th>
 				<th>CTR</th>
                 <th>CPR FB</th>
-                <th>CPR ADS</th>
+                <th>CPR ADS / 2</th>
 				<th>Total Link Clicks</th>
 				<th>Total Page Views</th>
 				<th>Click Different</th>
@@ -207,7 +212,7 @@
 	</table>
 
     <!-- Tambahkan Script untuk SheetJS -->
-    <script src="Profit%20Calculator%20jad_files/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script>
 		// Declare storage objects for imported data
         let spendData = {};
@@ -610,12 +615,21 @@
 					}
 					diffCell.appendChild(diffSpan);
 					
-					const deleteCell = row.insertCell(13); // Updated cell index
+					const deleteCell = row.insertCell(13); // Updated for Delete column
 					const deleteButton = document.createElement('button');
 					deleteButton.textContent = 'Delete';
 					deleteButton.style.padding = '5px 10px';
 
-					// Event listener untuk menghapus baris
+					const noteCell = row.insertCell(14); // Insert a new cell for Note (index 14)
+					const noteInput = document.createElement('input');
+					noteInput.type = 'text';
+					noteInput.classList.add('small-input'); // Add the same class for styling
+					noteInput.style.width = '90%'
+					noteInput.style.marginBottom = '0px';
+
+					noteCell.appendChild(noteInput);
+
+					// Add the Delete button functionality
 					deleteButton.addEventListener('click', function () {
 						row.remove();
 					});
@@ -692,13 +706,15 @@
 		function addRowToggleHighlightListener(tableId) {
 			const table = document.getElementById(tableId);
 			table.addEventListener('click', function (event) {
-				const clickedRow = event.target.closest('tr'); // Temukan baris yang diklik
-				if (clickedRow) {
-					// Toggle highlight pada baris yang diklik
-					clickedRow.classList.toggle('highlight');
+				const clickedRow = event.target.closest('tr'); // Find the clicked row
+
+				// Ignore if the clicked element is an input field (to prevent highlight toggle)
+				if (clickedRow && !event.target.closest('input')) {
+					clickedRow.classList.toggle('highlight'); // Toggle highlight if not an input field
 				}
 			});
 		}
+
 		
 		document.getElementById('downloadButton').addEventListener('click', downloadHTML);
 		function downloadHTML() {
@@ -714,7 +730,7 @@
 			};
 			
 			const formattedTime = currentTime.toLocaleDateString('en-US', options);
-			const filename = `profit-calculator-${formattedTime}.html`;
+			const filename = `Profit-${formattedTime}.html`;
 			
 			// Clone the current document
 			const htmlContent = document.documentElement.outerHTML;
@@ -775,11 +791,11 @@
 				hour12: false,
 			};
 			const formattedTime = currentTime.toLocaleDateString('en-US', options);
-			const filename = `profit-calculator-${formattedTime}.xlsx`;
+			const filename = `JPNN-${formattedTime}.xlsx`;
 
 			// Save the file
 			XLSX.writeFile(wb, filename);
 		}
 	</script>
-
-</body></html>
+</body>
+</html>
