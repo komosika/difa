@@ -1,0 +1,811 @@
+<html lang="en"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<!-- Title displayed in browser tab -->
+    <title>Profit Calculator</title>
+    <style>
+		/* Base styles: font, background, text color, layout */
+		body {
+			font-family: Arial, sans-serif;
+			background-color: #0f0f0f; /* Warna latar belakang hitam pekat */
+			color: #d4d4d4; /* Warna teks abu-abu terang */
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			padding: 20px;
+		}
+		
+		/* Container for inputs and buttons */
+		.container {
+			background-color: #1a1a1a; /* Warna latar belakang kontainer abu-abu gelap */
+			padding: 20px 30px;
+			border-radius: 8px;
+			box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+			max-width: 500px;
+			width: 100%;
+			text-align: center;
+			margin-bottom: 20px;
+		}
+
+		h2 {
+			color: #5cbb68; /* Warna teks heading hijau muda */
+			margin-bottom: 20px;
+		}
+		
+		h3 {
+			margin-top: 50px;
+			margin-bottom: -10px;
+			color: #1ba74c; /* Warna teks sub heading abu-abu terang */
+		}
+
+		label {
+			display: block;
+			font-weight: bold;
+			margin-bottom: 5px;
+			color: #0a8342; /* Warna label abu-abu terang */
+		}
+
+		.small-input {
+			width: 97%;
+			padding: 5px;
+			padding-left: 10px;
+			padding-right: 0px;
+			font-size: 14px;
+			border: 1px solid #3d3d3d; /* Warna border input */
+			border-radius: 4px;
+			margin-bottom: 10px;
+			background-color: #242424; /* Latar belakang input abu gelap */
+			color: #d4d4d4; /* Warna teks input */
+		}
+
+		button {
+			background-color: #0a8342; /* Warna tombol hijau tua */
+			color: #ffffff;
+			border: none;
+			padding: 10px 20px;
+			border-radius: 4px;
+			font-size: 16px;
+			cursor: pointer;
+			width: 100%;
+		}
+
+		button:hover {
+			background-color: #5cbb68; /* Warna tombol saat hover */
+		}
+
+		table {
+			width: 100%;
+			border-collapse: collapse;
+			margin-top: 20px;
+		}
+
+		table, th, td {
+			border: 1px solid #333; /* Warna border tabel */
+		}
+
+		th, td {
+			padding: 10px;
+			text-align: center;
+		}
+
+		th {
+			background-color: #053b1e; /* Latar belakang header tabel abu-abu gelap */
+			color: #f5f5f5; /* Warna teks header tabel */
+		}
+
+		th.sortable {
+			cursor: pointer;
+			background-color: #053b1e;
+		}
+
+		th.sortable:hover {
+			background-color: #0a8342; /* Warna header tabel saat hover */
+		}
+
+		tr:hover {
+			background-color: #053b1e; /* Latar belakang baris tabel saat hover */
+		}
+		
+		tr.highlight {
+			background-color: #053b1e !important; /* Warna highlight hijau terang */
+			color: #fff; /* Warna teks putih untuk kontras */
+		}
+		
+		th:nth-child(14), td:nth-child(14) {
+			display: none;
+		}
+		
+		#downloadExcelButton {
+		  display: none;
+		}
+		
+		.positive {
+			background-color: #0a8342; /* Green background for positive values */
+			color: white; /* White text color */
+		}
+
+		.negative {
+			background-color: #a30010; /* Red background for negative values */
+			color: white; /* White text color */
+		}
+	</style>
+</head>
+<body>
+    <div class="container">
+		<h2>Automatic Profit Calculator</h2>
+		
+		<label for="fileModal">Upload File Spend Facebook Ads</label>
+		<input type="file" id="fileModal" class="small-input" accept=".xlsx" onchange="handleFileUpload('modal')">
+
+		<label for="fileKeuntungan">Upload File Profit Adsense</label>
+		<input type="file" id="fileKeuntungan" class="small-input" accept=".xlsx" onchange="handleFileUpload('keuntungan')">
+
+		<button onclick="processFiles()" style="margin-top: 10px;">Proses Data</button>
+		<button id="downloadButton" style="margin-top: 10px;">Download HTML</button>
+		<button id="downloadExcelButton" style="margin-top: 10px;">Download Excel</button>
+		<button id="saveButton">Save</button>
+		<p id="processTime" style="font-weight: bold; color: rgb(10, 131, 66);">Data diproses pada: 11/08/2025, 08:11</p>
+	</div>
+
+
+    <table id="hasilTable">
+        <thead>
+            <tr>
+                <th class="sortable" onclick="sortTable(0)">Negara</th>
+                <th class="sortable" onclick="sortTable(1)">Spend Facebook Ads</th>
+                <th class="sortable" onclick="sortTable(2)">Profit Adsense</th>
+                <th class="sortable" onclick="sortTable(3)">Profit</th>
+                <th class="sortable" onclick="sortTable(4)">Profit X</th>
+                <th class="sortable" onclick="sortTable(5)">Profit %</th>
+				<th class="sortable" onclick="sortTable(6)">CPC</th>
+                <th class="sortable" onclick="sortTable(7)">CTR</th>
+                <th class="sortable" onclick="sortTable(8)">CPR FB</th>
+                <th class="sortable" onclick="sortTable(9)">CPR ADS / 2</th>
+				<th class="sortable" onclick="sortTable(10)">Link Clicks</th>
+				<th class="sortable" onclick="sortTable(11)">Page Views</th>
+				<th class="sortable" onclick="sortTable(12)">Click Different</th>
+				<th class="sortable" onclick="sortTable(13)">Delete</th>
+				<th class="sortable" onclick="sortTable(14)">Note</th>
+            </tr>
+        </thead>
+        <tbody><tr><td>United States</td><td>Rp 1,038,294</td><td>Rp 1,940,921</td><td>Rp 902,627</td><td>1.87x</td><td>86.93%</td><td>Rp 3,052</td><td>12.22%</td><td><span class="negative">Rp 209</span></td><td>Rp 186</td><td>4,967</td><td>5,203</td><td><span class="positive">236</span></td><td><button style="padding: 5px 10px;">Delete</button></td><td><input type="text" class="small-input" style="width: 90%; margin-bottom: 0px;"></td></tr><tr><td>Thailand</td><td>Rp 1,036,035</td><td>Rp 1,427,591</td><td>Rp 391,556</td><td>1.38x</td><td>37.79%</td><td>Rp 297</td><td>21.67%</td><td><span class="negative">Rp 68</span></td><td>Rp 32</td><td>15,135</td><td>22,162</td><td><span class="positive">7,027</span></td><td><button style="padding: 5px 10px;">Delete</button></td><td><input type="text" class="small-input" style="width: 90%; margin-bottom: 0px;"></td></tr><tr><td>India</td><td>Rp 504,707</td><td>Rp 1,209,877</td><td>Rp 705,170</td><td>2.40x</td><td>139.72%</td><td>Rp 144</td><td>16.08%</td><td><span class="positive">Rp 10</span></td><td>Rp 12</td><td>48,859</td><td>52,335</td><td><span class="positive">3,476</span></td><td><button style="padding: 5px 10px;">Delete</button></td><td><input type="text" class="small-input" style="width: 90%; margin-bottom: 0px;"></td></tr><tr><td>Mexico</td><td>Rp 287,277</td><td>Rp 669,939</td><td>Rp 382,662</td><td>2.33x</td><td>133.20%</td><td>Rp 535</td><td>7.80%</td><td><span class="positive">Rp 18</span></td><td>Rp 21</td><td>16,009</td><td>16,057</td><td><span class="positive">48</span></td><td><button style="padding: 5px 10px;">Delete</button></td><td><input type="text" class="small-input" style="width: 90%; margin-bottom: 0px;"></td></tr><tr><td>Malaysia</td><td>Rp 249,722</td><td>Rp 481,023</td><td>Rp 231,301</td><td>1.93x</td><td>92.62%</td><td>Rp 386</td><td>13.91%</td><td><span class="negative">Rp 31</span></td><td>Rp 27</td><td>8,113</td><td>8,962</td><td><span class="positive">849</span></td><td><button style="padding: 5px 10px;">Delete</button></td><td><input type="text" class="small-input" style="width: 90%; margin-bottom: 0px;"></td></tr><tr><td>Brazil</td><td>Rp 243,103</td><td>Rp 459,144</td><td>Rp 216,041</td><td>1.89x</td><td>88.87%</td><td>Rp 371</td><td>8.73%</td><td><span class="negative">Rp 18</span></td><td>Rp 16</td><td>13,855</td><td>14,178</td><td><span class="positive">323</span></td><td><button style="padding: 5px 10px;">Delete</button></td><td><input type="text" class="small-input" style="width: 90%; margin-bottom: 0px;"></td></tr><tr><td>Vietnam</td><td>Rp 172,889</td><td>Rp 727,023</td><td>Rp 554,134</td><td>4.21x</td><td>320.51%</td><td>Rp 186</td><td>18.16%</td><td><span class="positive">Rp 11</span></td><td>Rp 17</td><td>16,421</td><td>21,563</td><td><span class="positive">5,142</span></td><td><button style="padding: 5px 10px;">Delete</button></td><td><input type="text" class="small-input" style="width: 90%; margin-bottom: 0px;"></td></tr><tr><td>Saudi Arabia</td><td>Rp 171,531</td><td>Rp 350,765</td><td>Rp 179,234</td><td>2.04x</td><td>104.49%</td><td>Rp 611</td><td>14.58%</td><td><span class="positive">Rp 39</span></td><td>Rp 45</td><td>4,428</td><td>3,936</td><td><span class="negative">-492</span></td><td><button style="padding: 5px 10px;">Delete</button></td><td><input type="text" class="small-input" style="width: 90%; margin-bottom: 0px;"></td></tr><tr><td>United Arab Emirates</td><td>Rp 68,773</td><td>Rp 193,851</td><td>Rp 125,078</td><td>2.82x</td><td>181.87%</td><td>Rp 1,114</td><td>14.75%</td><td><span class="positive">Rp 63</span></td><td>Rp 82</td><td>1,092</td><td>1,180</td><td><span class="positive">88</span></td><td><button style="padding: 5px 10px;">Delete</button></td><td><input type="text" class="small-input" style="width: 90%; margin-bottom: 0px;"></td></tr><tr><td>Peru</td><td>Rp 27,065</td><td>Rp 79,222</td><td>Rp 52,157</td><td>2.93x</td><td>192.71%</td><td>Rp 190</td><td>13.89%</td><td><span class="positive">Rp 10</span></td><td>Rp 13</td><td>2,811</td><td>2,994</td><td><span class="positive">183</span></td><td><button style="padding: 5px 10px;">Delete</button></td><td><input type="text" class="small-input" style="width: 90%; margin-bottom: 0px;"></td></tr></tbody>
+    </table>
+	
+	<!-- Tabel untuk Menampilkan Total -->
+	<h3>Total Spending &amp; Earning</h3>
+	<table id="totalTable">
+		<thead>
+			<tr>
+				<th>Total Spend Facebook Ads</th>
+				<th>Total Profit Adsense</th>
+				<th>Total Profit</th>
+				<th>Total Profit X</th>
+				<th>Total Profit %</th>
+				<th>CPC</th>
+				<th>CTR</th>
+                <th>CPR FB</th>
+                <th>CPR ADS / 2</th>
+				<th>Total Link Clicks</th>
+				<th>Total Page Views</th>
+				<th>Click Different</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td id="totalSpendCell">Rp 3,799,396</td>
+				<td id="totalProfitCell">Rp 7,539,353</td>
+				<td id="totalKeuntunganCell">Rp 3,739,957</td>
+				<td id="totalProfitXCell">1.98x</td>
+				<td id="totalProfitPercentCell">98.44%</td>
+				<td id="avgCpcCell">Rp 689</td>
+				<td id="avgCtrCell">14.18%</td>
+                <td id="avgCprFbCell">Rp 48</td>
+                <td id="avgCprMaxCell">Rp 45</td>
+				<td id="totalClick">131,690</td>
+				<td id="totalView">148,570</td>
+				<td id="clickDifferent">16,880</td>
+			</tr>
+		</tbody>
+	</table>
+
+    <!-- Tambahkan Script untuk SheetJS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script>
+		// Declare storage objects for imported data
+        let spendData = {};
+        let profitData = {};
+		let cpcData = {};
+        let ctrData = {};
+		let clickData = {};
+		let viewData = {};
+        let cprFbData = {}; // New CPR FB data
+		let currentSortColumn = -1;
+        let isAscending = true;
+
+		function uploadFileToGitHub(filename, content) {
+			"Afghanistan": "AF",
+			"Albania": "AL",
+			"Algeria": "DZ",
+			"Andorra": "AD",
+			"Angola": "AO",
+			"Antigua and Barbuda": "AG",
+			"Argentina": "AR",
+			"Armenia": "AM",
+			"Australia": "AU",
+			"Austria": "AT",
+			"Azerbaijan": "AZ",
+			"Bahamas": "BS",
+			"Bahrain": "BH",
+			"Bangladesh": "BD",
+			"Barbados": "BB",
+			"Belarus": "BY",
+			"Belgium": "BE",
+			"Belize": "BZ",
+			"Benin": "BJ",
+			"Bhutan": "BT",
+			"Bolivia": "BO",
+			"Bosnia & Herzegovina": "BA",
+			"Botswana": "BW",
+			"Brazil": "BR",
+			"Brunei": "BN",
+			"Bulgaria": "BG",
+			"Burkina Faso": "BF",
+			"Burundi": "BI",
+			"Cabo Verde": "CV",
+			"Cambodia": "KH",
+			"Cameroon": "CM",
+			"Canada": "CA",
+			"Central African Republic": "CF",
+			"Chad": "TD",
+			"Chile": "CL",
+			"China": "CN",
+			"Colombia": "CO",
+			"Comoros": "KM",
+			"Congo (Congo-Brazzaville)": "CG",
+			"Congo (DRC)": "CD",
+			"Costa Rica": "CR",
+			"Croatia": "HR",
+			"Cuba": "CU",
+			"Cyprus": "CY",
+			"Czechia": "CZ",
+			"Denmark": "DK",
+			"Djibouti": "DJ",
+			"Dominica": "DM",
+			"Dominican Republic": "DO",
+			"Ecuador": "EC",
+			"Egypt": "EG",
+			"El Salvador": "SV",
+			"Equatorial Guinea": "GQ",
+			"Eritrea": "ER",
+			"Estonia": "EE",
+			"Eswatini (Swaziland)": "SZ",
+			"Ethiopia": "ET",
+			"Fiji": "FJ",
+			"Finland": "FI",
+			"France": "FR",
+			"Gabon": "GA",
+			"Gambia": "GM",
+			"Georgia": "GE",
+			"Germany": "DE",
+			"Ghana": "GH",
+			"Greece": "GR",
+			"Grenada": "GD",
+			"Guatemala": "GT",
+			"Guinea": "GN",
+			"Guinea-Bissau": "GW",
+			"Guyana": "GY",
+			"Haiti": "HT",
+			"Hong Kong": "HK",
+			"Honduras": "HN",
+			"Hungary": "HU",
+			"Iceland": "IS",
+			"India": "IN",
+			"Indonesia": "ID",
+			"Iran": "IR",
+			"Iraq": "IQ",
+			"Ireland": "IE",
+			"Israel": "IL",
+			"Italy": "IT",
+			"Jamaica": "JM",
+			"Japan": "JP",
+			"Jordan": "JO",
+			"Kazakhstan": "KZ",
+			"Kenya": "KE",
+			"Kiribati": "KI",
+			"Korea (North)": "KP",
+			"Korea (South)": "KR",
+			"Kuwait": "KW",
+			"Kyrgyzstan": "KG",
+			"Laos": "LA",
+			"Latvia": "LV",
+			"Lebanon": "LB",
+			"Lesotho": "LS",
+			"Liberia": "LR",
+			"Libya": "LY",
+			"Liechtenstein": "LI",
+			"Lithuania": "LT",
+			"Luxembourg": "LU",
+			"Madagascar": "MG",
+			"Malawi": "MW",
+			"Malaysia": "MY",
+			"Maldives": "MV",
+			"Mali": "ML",
+			"Malta": "MT",
+			"Marshall Islands": "MH",
+			"Mauritania": "MR",
+			"Mauritius": "MU",
+			"Mexico": "MX",
+			"Micronesia": "FM",
+			"Moldova": "MD",
+			"Monaco": "MC",
+			"Mongolia": "MN",
+			"Montenegro": "ME",
+			"Morocco": "MA",
+			"Mozambique": "MZ",
+			"Myanmar (Burma)": "MM",
+			"Namibia": "NA",
+			"Nauru": "NR",
+			"Nepal": "NP",
+			"Netherlands": "NL",
+			"New Zealand": "NZ",
+			"Nicaragua": "NI",
+			"Niger": "NE",
+			"Nigeria": "NG",
+			"North Macedonia": "MK",
+			"Norway": "NO",
+			"Oman": "OM",
+			"Pakistan": "PK",
+			"Palau": "PW",
+			"Palestine": "PS",
+			"Panama": "PA",
+			"Papua New Guinea": "PG",
+			"Paraguay": "PY",
+			"Peru": "PE",
+			"Philippines": "PH",
+			"Poland": "PL",
+			"Portugal": "PT",
+			"Qatar": "QA",
+			"Romania": "RO",
+			"Russia": "RU",
+			"Rwanda": "RW",
+			"Saint Kitts & Nevis": "KN",
+			"Saint Lucia": "LC",
+			"Saint Vincent & the Grenadines": "VC",
+			"Samoa": "WS",
+			"San Marino": "SM",
+			"Sao Tome & Principe": "ST",
+			"Saudi Arabia": "SA",
+			"Senegal": "SN",
+			"Serbia": "RS",
+			"Seychelles": "SC",
+			"Sierra Leone": "SL",
+			"Singapore": "SG",
+			"Slovakia": "SK",
+			"Slovenia": "SI",
+			"Solomon Islands": "SB",
+			"Somalia": "SO",
+			"South Africa": "ZA",
+			"South Korea": "KR",
+			"South Sudan": "SS",
+			"Spain": "ES",
+			"Sri Lanka": "LK",
+			"Sudan": "SD",
+			"Suriname": "SR",
+			"Sweden": "SE",
+			"Switzerland": "CH",
+			"Syria": "SY",
+			"Taiwan": "TW",
+			"Tajikistan": "TJ",
+			"Tanzania": "TZ",
+			"Thailand": "TH",
+			"Timor-Leste": "TL",
+			"Togo": "TG",
+			"Tonga": "TO",
+			"Trinidad & Tobago": "TT",
+			"Tunisia": "TN",
+			"Türkiye": "TR",
+			"Turkmenistan": "TM",
+			"Tuvalu": "TV",
+			"Uganda": "UG",
+			"Ukraine": "UA",
+			"United Arab Emirates": "AE",
+			"United Kingdom": "GB",
+			"United States": "US",
+			"Uruguay": "UY",
+			"Uzbekistan": "UZ",
+			"Vanuatu": "VU",
+			"Venezuela": "VE",
+			"Vietnam": "VN",
+			"Yemen": "YE",
+			"Zambia": "ZM",
+			"Zimbabwe": "ZW",
+			"Puerto Rico": "PR"
+		};
+
+		const codeToCountryMapping = {};
+		for (const [country, code] of Object.entries(countryCodeMapping)) {
+			codeToCountryMapping[code] = country;
+		}
+
+		// Fungsi untuk mendapatkan kode negara dari nama negara
+		function getCountryCode(country) {
+			return countryCodeMapping[country] || country;
+		}
+
+		// Handle file upload: reads Excel and extracts relevant columns
+		function handleFileUpload(type) {
+			const fileInput = type === 'modal' ? document.getElementById('fileModal') : document.getElementById('fileKeuntungan');
+			const file = fileInput.files[0];
+
+			if (file) {
+				const reader = new FileReader();
+				reader.onload = function(e) {
+					const data = new Uint8Array(e.target.result);
+					const workbook = XLSX.read(data, { type: 'array' });
+					const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+					const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+					const headers = jsonData[0];
+					const countryIndex = headers.indexOf("Country");
+					const amountIndex = type === 'modal' ? headers.indexOf("Amount spent (IDR)") : headers.indexOf("Estimated earnings (IDR)");
+					const cpcIndex = type === 'keuntungan' ? headers.indexOf("CPC (IDR)") : -1;
+                    const ctrIndex = type === 'keuntungan' ? headers.indexOf("Page CTR") : -1;
+					const clickIndex = type === 'modal' ? headers.indexOf("Link clicks") : -1;
+					const viewIndex = type === 'keuntungan' ? headers.indexOf("Page views") : -1;
+                    const cprFbIndex = type === 'modal' ? headers.indexOf("CPC (cost per link click)") : -1; // New CPR FB column
+
+					if (countryIndex === -1 || amountIndex === -1 || 
+                       (type === 'keuntungan' && (cpcIndex === -1 || ctrIndex === -1 || viewIndex === -1)) ||
+                       (type === 'modal' && cprFbIndex === -1)) {
+						alert("Kolom yang diperlukan tidak ditemukan!");
+						return;
+					}
+
+					jsonData.slice(1).forEach(row => {
+						let country = row[countryIndex]?.trim();
+						
+						// Cek jika negara kosong atau null, lanjutkan ke baris berikutnya
+						if (!country) return;
+
+						const countryCode = getCountryCode(country); // Mendapatkan kode negara
+						const amount = parseFloat(row[amountIndex]) || 0;
+
+						if (type === 'modal') {
+							const clicks = parseFloat(row[clickIndex]) || 0;
+							// Filter: Hanya tambahkan data jika Link clicks >= 5
+							if (clicks < 5) return;
+								
+							spendData[countryCode] = amount;
+							clickData[countryCode] = clicks;
+                            cprFbData[countryCode] = parseFloat(row[cprFbIndex]) || 0; // Store CPR FB data
+						} else {
+							profitData[countryCode] = amount;
+							cpcData[countryCode] = parseFloat(row[cpcIndex]) || 0;
+                            ctrData[countryCode] = parseFloat(row[ctrIndex]) || 0;
+							viewData[countryCode] = parseFloat(row[viewIndex]) || 0;
+						}
+					});
+				};
+				reader.readAsArrayBuffer(file);
+			}
+		}
+
+		// Process uploaded data: calculate metrics and populate tables
+		function processFiles() {
+			const table = document.getElementById('hasilTable').getElementsByTagName('tbody')[0];
+			const totalSpendCell = document.getElementById('totalSpendCell');
+			const totalProfitCell = document.getElementById('totalProfitCell');
+			const totalKeuntunganCell = document.getElementById('totalKeuntunganCell');
+			const totalProfitXCell = document.getElementById('totalProfitXCell');
+			const totalProfitPercentCell = document.getElementById('totalProfitPercentCell');
+			const avgCpcCell = document.getElementById('avgCpcCell');
+			const avgCtrCell = document.getElementById('avgCtrCell');
+            const avgCprFbCell = document.getElementById('avgCprFbCell'); // Updated cell ID
+            const avgCprMaxCell = document.getElementById('avgCprMaxCell'); // Updated cell ID
+			const totalClickCell = document.getElementById('totalClick');
+			const totalViewCell = document.getElementById('totalView');
+			const clickDifferentCell = document.getElementById('clickDifferent');
+
+			table.innerHTML = ''; 
+			let totalSpend = 0;
+			let totalProfitAdsense = 0;
+			let totalProfit = 0;
+			let cpcSum = 0;
+			let ctrSum = 0;
+            let cprFbSum = 0; // New CPR FB sum
+            let cprMaxSum = 0; // Renamed CPR to CPR MAX
+			let clickSum = 0;
+			let viewSum = 0;
+			let nonZeroCpcCount = 0;
+			let nonZeroCtrCount = 0;
+            let nonZeroCprFbCount = 0; // New CPR FB counter
+            let nonZeroCprMaxCount = 0; // Renamed CPR counter
+
+			const processTimeElement = document.getElementById('processTime');
+			const currentTime = new Date();
+			const options = {
+				year: 'numeric',
+				month: '2-digit',
+				day: '2-digit',
+				hour: '2-digit',
+				minute: '2-digit',
+				hour12: false,
+			};
+			processTimeElement.textContent = `Data diproses pada: ${currentTime.toLocaleDateString('en-US', options)}`;
+			processTimeElement.style.color = '#0a8342';
+
+			for (const country in spendData) {
+				if (profitData[country]) {
+					const spend = spendData[country];
+					const profitAdsense = profitData[country];
+					const profit = profitAdsense - spend;
+					const cpc = cpcData[country] || 0;
+					const ctr = ctrData[country] || 0;
+                    const cprFb = cprFbData[country] || 0; // Add CPR FB value
+                    // Calculate CPR MAX: (CPC × CTR)/2
+                    const cprMax = (cpc * ctr) / 2;
+					const clicks = clickData[country] || 0;
+					const views = viewData[country] || 0;
+					const clickDifference = views - clicks;
+
+					totalSpend += spend;
+					totalProfitAdsense += profitAdsense;
+					totalProfit += profit;
+					cpcSum += cpc;
+					ctrSum += ctr;
+                    cprFbSum += cprFb; // Add CPR FB to sum
+                    cprMaxSum += cprMax; // Renamed CPR to CPR MAX
+					clickSum += clicks;
+					viewSum += views;
+					nonZeroCpcCount += cpc > 0 ? 1 : 0;
+					nonZeroCtrCount += ctr > 0 ? 1 : 0;
+                    nonZeroCprFbCount += cprFb > 0 ? 1 : 0; // Count non-zero CPR FB
+                    nonZeroCprMaxCount += cprMax > 0 ? 1 : 0; // Renamed CPR counter
+
+					const profitX = profitAdsense / spend; 
+					const profitPercent = (profit / spend) * 100; 
+
+					const row = table.insertRow();
+					row.insertCell(0).textContent = codeToCountryMapping[country];
+					row.insertCell(1).textContent = `Rp ${spend.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+					row.insertCell(2).textContent = `Rp ${profitAdsense.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+					row.insertCell(3).textContent = `Rp ${profit.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+					row.insertCell(4).textContent = `${profitX.toFixed(2)}x`;
+					row.insertCell(5).textContent = `${profitPercent.toFixed(2)}%`;
+					row.insertCell(6).textContent = `Rp ${cpc.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+					row.insertCell(7).textContent = `${(ctr * 100).toFixed(2)}%`;
+					
+                    const cprFbCell = row.insertCell(8);
+					// buat span untuk teks saja
+					const span = document.createElement('span');
+					span.textContent = `Rp ${cprFb.toLocaleString('en-US', {
+					  minimumFractionDigits: 0,
+					  maximumFractionDigits: 0
+					})}`;
+					// tambahkan class sesuai perbandingan
+					if (cprFb <= cprMax) {
+					  span.classList.add('positive');
+					} else {
+					  span.classList.add('negative');
+					}
+					// append span ke cell
+					cprFbCell.appendChild(span);
+					
+					// 9. CPR MAX cell
+					row.insertCell(9).textContent = `Rp ${cprMax.toLocaleString('en-US', {
+					  minimumFractionDigits: 0,
+					  maximumFractionDigits: 0
+					})}`;
+					row.insertCell(10).textContent = clicks.toLocaleString('en-US', {maximumFractionDigits: 0 });
+					row.insertCell(11).textContent = views.toLocaleString('en-US', {maximumFractionDigits: 0 });
+					
+					// 12. Click Difference cell
+					const diffCell = row.insertCell(12);
+					const diffSpan = document.createElement('span');
+					diffSpan.textContent = clickDifference.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+					// kalau difference positif → hijau, negatif → merah
+					if (clickDifference >= 0) {
+					  diffSpan.classList.add('positive');
+					} else {
+					  diffSpan.classList.add('negative');
+					}
+					diffCell.appendChild(diffSpan);
+					
+					const deleteCell = row.insertCell(13); // Updated for Delete column
+					const deleteButton = document.createElement('button');
+					deleteButton.textContent = 'Delete';
+					deleteButton.style.padding = '5px 10px';
+
+					const noteCell = row.insertCell(14); // Insert a new cell for Note (index 14)
+					const noteInput = document.createElement('input');
+					noteInput.type = 'text';
+					noteInput.classList.add('small-input'); // Add the same class for styling
+					noteInput.style.width = '90%'
+					noteInput.style.marginBottom = '0px';
+
+					noteCell.appendChild(noteInput);
+
+					// Add the Delete button functionality
+					deleteButton.addEventListener('click', function () {
+						row.remove();
+					});
+
+					deleteCell.appendChild(deleteButton);
+				}
+			}
+
+			totalSpendCell.textContent = `Rp ${totalSpend.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+			totalProfitCell.textContent = `Rp ${totalProfitAdsense.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+			totalKeuntunganCell.textContent = `Rp ${totalProfit.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+			totalProfitXCell.textContent = `${(totalProfitAdsense / totalSpend).toFixed(2)}x`;
+			totalProfitPercentCell.textContent = `${((totalProfit / totalSpend) * 100).toFixed(2)}%`;
+			avgCpcCell.textContent = `Rp ${(cpcSum / nonZeroCpcCount).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+			avgCtrCell.textContent = `${(ctrSum / nonZeroCtrCount * 100).toFixed(2)}%`;
+            avgCprFbCell.textContent = `Rp ${(cprFbSum / nonZeroCprFbCount).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`; // CPR FB average
+            avgCprMaxCell.textContent = `Rp ${(cprMaxSum / nonZeroCprMaxCount).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`; // CPR MAX average
+			totalClickCell.textContent = clickSum.toLocaleString('en-US', {maximumFractionDigits: 0 });
+			totalViewCell.textContent = viewSum.toLocaleString('en-US', {maximumFractionDigits: 0 });
+			clickDifferentCell.textContent = (viewSum - clickSum).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+			
+			addRowToggleHighlightListener('hasilTable'); // Untuk tabel utama
+			addRowToggleHighlightListener('totalTable'); // Untuk tabel total
+		}
+
+		// Fungsi untuk sortir tabel
+		function sortTable(columnIndex) {
+			const table = document.getElementById('hasilTable');
+			const rows = Array.from(table.rows).slice(1); // Ambil semua baris kecuali header
+			const isAscending = table.getAttribute('data-sort') === 'asc';
+			const direction = isAscending ? 1 : -1;
+
+			// Sortir baris berdasarkan kolom yang dipilih
+			rows.sort((a, b) => {
+				let aValue, bValue;
+
+				// Jika kolom yang dipilih adalah kolom negara
+				if (columnIndex === 0) {
+					aValue = a.cells[columnIndex].innerText.toLowerCase(); // Menggunakan lowercase untuk pengurutan
+					bValue = b.cells[columnIndex].innerText.toLowerCase();
+					return (aValue > bValue ? 1 : -1) * direction;
+				} else {
+					aValue = parseFloat(a.cells[columnIndex].innerText.replace(/[Rp. ]/g, '').replace(',', '')) || 0;
+					bValue = parseFloat(b.cells[columnIndex].innerText.replace(/[Rp. ]/g, '').replace(',', '')) || 0;
+					return (aValue - bValue) * direction;
+				}
+			});
+
+			// Hapus semua baris data dari tabel
+			for (const row of rows) {
+				table.deleteRow(1); // Hapus baris pertama (selain header)
+			}
+
+			// Masukkan kembali baris data yang telah di-sortir
+			for (const row of rows) {
+				table.appendChild(row);
+			}
+
+			// Atur arah sort untuk klik berikutnya
+			table.setAttribute('data-sort', isAscending ? 'desc' : 'asc');
+		}
+
+        function updateSortIndicators(columnIndex) {
+            const headers = document.querySelectorAll('#hasilTable th');
+            headers.forEach((header, index) => {
+                if (index === columnIndex) {
+                    header.classList.toggle('desc', !isAscending);
+                } else {
+                    header.classList.remove('desc');
+                }
+            });
+        }
+		
+		function addRowToggleHighlightListener(tableId) {
+			const table = document.getElementById(tableId);
+			table.addEventListener('click', function (event) {
+				const clickedRow = event.target.closest('tr'); // Find the clicked row
+
+				// Ignore if the clicked element is an input field (to prevent highlight toggle)
+				if (clickedRow && !event.target.closest('input')) {
+					clickedRow.classList.toggle('highlight'); // Toggle highlight if not an input field
+				}
+			});
+		}
+		
+		document.getElementById('downloadButton').addEventListener('click', downloadHTML);
+		function downloadHTML() {
+			// Get current time for filename
+			const currentTime = new Date();
+			const options = {
+				year: 'numeric',
+				month: '2-digit',
+				day: '2-digit',
+				hour: '2-digit',
+				minute: '2-digit',
+				hour12: false,
+			};
+			
+			const formattedTime = currentTime.toLocaleDateString('en-US', options);
+			const filename = `Profit-${formattedTime}.html`;
+			
+			// Clone the current document
+			let htmlContent = document.documentElement.outerHTML;
+
+			const lines = htmlContent.split('\n'); // Pisahkan HTML berdasarkan baris
+    		
+    		// Hapus baris 226 sampai 268 (indeks 225 sampai 267)
+    		lines.splice(225, 43); // Menghapus 43 baris mulai dari indeks 225 (baris 226 hingga 268)
+    
+   			// Gabungkan kembali baris-baris HTML yang sudah dimodifikasi
+    		htmlContent = lines.join('\n');  // Memperbarui htmlContent
+			
+			// Create a Blob containing the HTML content
+			const blob = new Blob([htmlContent], { type: 'text/html' });
+			
+			// Create a download link
+			const downloadLink = document.createElement('a');
+			downloadLink.href = URL.createObjectURL(blob);
+			downloadLink.download = filename;
+			
+			// Trigger the download
+			document.body.appendChild(downloadLink);
+			downloadLink.click();
+			document.body.removeChild(downloadLink);
+			// Setelah unduhan, mengunggah file ke GitHub
+		uploadFileToGitHub(filename, htmlContent); // Panggil fungsi upload	
+		}
+
+		document.getElementById('saveButton').addEventListener('click', function() {
+   		downloadHTML(); // Memanggil fungsi downloadHTML yang juga mengunggah ke GitHub
+});
+		
+		
+		// New function to download the table as Excel (.xlsx)
+		document.getElementById('downloadExcelButton').addEventListener('click', downloadExcel);
+		function downloadExcel() {
+			const table = document.getElementById('hasilTable');
+			const rows = Array.from(table.rows);
+
+			const excelData = [];
+
+			// Extract table headers
+			const headers = [];
+			const headerCells = rows[0].cells;
+			for (let i = 0; i < headerCells.length - 1; i++) { // Exclude the delete column
+				headers.push(headerCells[i].innerText);
+			}
+			excelData.push(headers);
+
+			// Extract table data rows
+			for (let i = 1; i < rows.length; i++) {
+				const rowData = [];
+				const cells = rows[i].cells;
+				for (let j = 0; j < cells.length - 1; j++) { // Exclude the delete column
+					rowData.push(cells[j].innerText);
+				}
+				excelData.push(rowData);
+			}
+
+			// Create a new workbook and add the data to it
+			const ws = XLSX.utils.aoa_to_sheet(excelData);
+			const wb = XLSX.utils.book_new();
+			XLSX.utils.book_append_sheet(wb, ws, 'Profit Data');
+
+			// Generate file and trigger download
+			const currentTime = new Date();
+			const options = {
+				year: 'numeric',
+				month: '2-digit',
+				day: '2-digit',
+				hour: '2-digit',
+				minute: '2-digit',
+				hour12: false,
+			};
+			const formattedTime = currentTime.toLocaleDateString('en-US', options);
+			const filename = `JPNN-${formattedTime}.xlsx`;
+
+			// Save the file
+			XLSX.writeFile(wb, filename);
+		}
+	</script>
+
+</body></html>
